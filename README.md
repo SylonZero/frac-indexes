@@ -1,6 +1,15 @@
-# frac-indexes
+# Fractional Indexes
 
 A JavaScript library for generating lexicographically ordered fractional indexes. This is useful for maintaining order in lists, especially when you need to insert items between existing ones without reindexing the entire list.
+
+## How This Library Stands Out
+
+This library is designed to keep fractional indexing simple and efficient. Unlike more complex fractional indexing libraries that rely on advanced data structures or introduce heavy abstractions, this library focuses on numerical simplicity with the following core principles:
+
+	1.	Purely Numerical Indexing: The indices are calculated as straightforward fractional numbers with optional jitter for uniqueness. There’s no reliance on hierarchical data structures or complex algorithms.
+	2.	Lightweight and Minimal Overhead: We use a straightforward calculation based on previous and next indices. This keeps the library fast, lightweight, and easy to integrate into any project.
+	3.	Human-Readable Indices: Indices are simple, sortable strings that are easy to debug, understand, and use directly in APIs or user interfaces.
+	4.	Ease of Use: The library provides basic functionality (insertion, bulk insertion, and item movement) with clear, intuitive APIs. You don’t need to learn a complicated API or handle intricate configuration.
 
 ## Features
 
