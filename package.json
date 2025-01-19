@@ -16,5 +16,13 @@
   "license": "MIT",
   "files": [
     "src"
-  ]
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SylonZero/frac-indexes.git"
+  },
+  "bugs": {
+    "url": "https://github.com/SylonZero/frac-indexes/issues"
+  },
+  "homepage": "https://github.com/SylonZero/frac-indexes#readme"
 } 
