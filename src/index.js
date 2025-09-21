@@ -6,30 +6,60 @@
  */
 function generateFractionalIndex(prevIndex, nextIndex) {
     const stepSize = 0.001;
-
-    // Generate a random integer between 10000 and 99999 (inclusive) as jitter
-    const jitter = Math.floor(10000 + Math.random() * 90000).toString();
     
-    let newIndex;
-
     if (prevIndex === null && nextIndex === null) {
         // List is empty
-        newIndex = (stepSize / 2).toFixed(5);
+        const baseIndex = stepSize / 2;
+        const jitter = Math.random() * 0.0001; // Small jitter for empty list
+        return (baseIndex + jitter).toFixed(10);
     } else if (prevIndex === null) {
         // Beginning of List
-        newIndex = (Math.min(stepSize / 2, Number(nextIndex) / 2)).toFixed(5);
+        const nextNum = Number(nextIndex);
+        const baseIndex = Math.min(stepSize / 2, nextNum / 2);
+        const jitter = Math.random() * (baseIndex * 0.1); // 10% of base as max jitter
+        return (baseIndex + jitter).toFixed(10);
     } else if (nextIndex === null) {
         // End of List
-        newIndex = (Number(prevIndex) + stepSize).toFixed(5);
+        const prevNum = Number(prevIndex);
+        const baseIndex = prevNum + stepSize;
+        const jitter = Math.random() * 0.0001; // Small jitter for end
+        return (baseIndex + jitter).toFixed(10);
     } else {
-        // Between Two Items
-        newIndex = ((Number(prevIndex) + Number(nextIndex)) / 2).toFixed(5);
+        // Between Two Items - CRITICAL CASE
+        const prevNum = Number(prevIndex);
+        const nextNum = Number(nextIndex);
+        const gap = nextNum - prevNum;
+        
+        // Safety check for invalid ranges
+        if (gap <= 0) {
+            throw new Error(`Invalid range: prevIndex (${prevIndex}) must be less than nextIndex (${nextIndex})`);
+        }
+        
+        // For extremely small gaps, use safe midpoint without jitter
+        const minSafeGap = 1e-10; // 10 decimal places precision
+        if (gap <= minSafeGap) {
+            const safeMidpoint = prevNum + (gap / 2);
+            return safeMidpoint.toFixed(15); // Higher precision for tiny gaps
+        }
+        
+        // Calculate safe midpoint with bounded jitter
+        const midpoint = prevNum + (gap / 2);
+        
+        // Jitter is limited to 25% of the gap on either side of midpoint
+        // This ensures we never exceed boundaries
+        const maxJitter = gap * 0.25;
+        const jitter = (Math.random() - 0.5) * maxJitter;
+        const finalIndex = midpoint + jitter;
+        
+        // Final safety check with small epsilon to handle floating point precision
+        const epsilon = 1e-15;
+        if (finalIndex <= (prevNum + epsilon) || finalIndex >= (nextNum - epsilon)) {
+            console.warn('Boundary violation detected, using safe midpoint');
+            return midpoint.toFixed(15);
+        }
+        
+        return finalIndex.toFixed(15);
     }
-
-    // Append random jitter to new index as a string
-    newIndex = newIndex + jitter;
-
-    return newIndex;
 }
 
 /**
@@ -43,45 +73,15 @@ function generateBulkIndexes(prevIndex, nextIndex, count) {
     if (count <= 0) return [];
     if (count === 1) return [generateFractionalIndex(prevIndex, nextIndex)];
 
-    const indexes = new Array(count);
+    const indexes = [];
     
-    // Generate first index
-    indexes[0] = generateFractionalIndex(prevIndex, nextIndex);
+    // Simple sequential approach: generate each index between the previous and next
+    let currentPrev = prevIndex;
     
-    // For better distribution, alternate between:
-    // 1. Inserting after the last generated index
-    // 2. Inserting between existing indexes
-    let insertAfter = true;
-    
-    for (let i = 1; i < count; i++) {
-        if (insertAfter) {
-            // Insert after the last generated index
-            indexes[i] = generateFractionalIndex(indexes[i-1], nextIndex);
-        } else {
-            // Find the largest gap between existing indexes
-            let maxGap = 0;
-            let insertPosition = 0;
-            
-            for (let j = 0; j < i; j++) {
-                const current = Number(indexes[j].slice(0, 7)); // Consider only the numeric part
-                const next = (j === i - 1) ? 
-                    (nextIndex ? Number(nextIndex.slice(0, 7)) : current + 1) : 
-                    Number(indexes[j + 1].slice(0, 7));
-                const gap = next - current;
-                
-                if (gap > maxGap) {
-                    maxGap = gap;
-                    insertPosition = j;
-                }
-            }
-            
-            // Insert in the largest gap
-            const prevIdx = indexes[insertPosition];
-            const nextIdx = insertPosition === i - 1 ? nextIndex : indexes[insertPosition + 1];
-            indexes[i] = generateFractionalIndex(prevIdx, nextIdx);
-        }
-        
-        insertAfter = !insertAfter; // Toggle strategy
+    for (let i = 0; i < count; i++) {
+        const newIndex = generateFractionalIndex(currentPrev, nextIndex);
+        indexes.push(newIndex);
+        currentPrev = newIndex; // Next index will be after this one
     }
     
     return indexes;

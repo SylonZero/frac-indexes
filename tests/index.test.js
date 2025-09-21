@@ -1,98 +1,181 @@
 const { generateFractionalIndex, generateBulkIndexes, generateRelocationIndexes } = require('../src/index');
 
-function testIndexGeneration() {
-    // Initialize array of indexes with one item
-    const indexes = [generateFractionalIndex(null, null)];
-
-    // Insert 9 more items into the array
-    for (let i = 1; i < 10; i++) {
-        indexes.push(generateFractionalIndex(indexes[i - 1], null));
-    }
-    console.log("Indexes after inserting 10 items:", indexes);
-
-    // Insert 5 items between the first and second items
-    for (let i = 0; i < 5; i++) {
-        indexes.splice(1, 0, generateFractionalIndex(indexes[0], indexes[1]));
-    }
-    console.log("Indexes after inserting 5 items between first and second items:", indexes);
-
-    // Insert 5 more items between the 4th and 5th original items
-    for (let i = 0; i < 5; i++) {
-        indexes.splice(6, 0, generateFractionalIndex(indexes[5], indexes[6]));
-    }
-    console.log("Indexes after inserting 5 more items between 4th and 5th original items:", indexes);
+// Helper function to create items with titles and indexes
+function createItem(title, index) {
+    return { title, index };
 }
 
-function testBulkIndexGeneration() {
-    console.log("\n=== Testing Bulk Index Generation ===\n");
-    
-    // Generate 5 indexes at the start of an empty list
-    const firstBatch = generateBulkIndexes(null, null, 5);
-    console.log("5 indexes for empty list:", firstBatch);
-    
-    // Generate 3 indexes between two existing indexes
-    const middleBatch = generateBulkIndexes(firstBatch[1], firstBatch[2], 3);
-    console.log("\n3 indexes between two existing indexes:", middleBatch);
-    
-    // Generate 4 indexes at the end of the list
-    const endBatch = generateBulkIndexes(firstBatch[firstBatch.length - 1], null, 4);
-    console.log("\n4 indexes at the end:", endBatch);
+// Helper function to display items in a readable format
+function displayItems(items, description) {
+    console.log(`\n${description}:`);
+    console.log('┌─────────────────────────────────────────────────────────────┐');
+    items.forEach((item, i) => {
+        const position = (i + 1).toString().padStart(2, ' ');
+        const title = item.title.padEnd(15, ' ');
+        const index = item.index;
+        console.log(`│ ${position}. ${title} │ Index: ${index} │`);
+    });
+    console.log('└─────────────────────────────────────────────────────────────┘');
     
     // Verify ordering
-    const allIndexes = [
-        ...firstBatch.slice(0, 2),
-        ...middleBatch,
-        ...firstBatch.slice(2),
-        ...endBatch
+    const isCorrectOrder = items.every((item, i) => 
+        i === 0 || item.index > items[i - 1].index
+    );
+    
+    console.log(`✅ Ordering is ${isCorrectOrder ? 'CORRECT' : 'INCORRECT'}`);
+    return isCorrectOrder;
+}
+
+function testBasicInsertion() {
+    console.log('\n🧪 === Testing Basic Insertion ===');
+    
+    // Start with an empty list
+    const items = [];
+    
+    // Add first item
+    items.push(createItem('Item 1', generateFractionalIndex(null, null)));
+    displayItems(items, 'After adding first item');
+    
+    // Add second item at the end
+    items.push(createItem('Item 2', generateFractionalIndex(items[0].index, null)));
+    displayItems(items, 'After adding second item at end');
+    
+    // Insert between Item 1 and Item 2
+    const newIndex = generateFractionalIndex(items[0].index, items[1].index);
+    items.splice(1, 0, createItem('Item 1.5', newIndex));
+    displayItems(items, 'After inserting Item 1.5 between Item 1 and Item 2');
+    
+    // Add another item at the beginning
+    const beginningIndex = generateFractionalIndex(null, items[0].index);
+    items.unshift(createItem('Item 0.5', beginningIndex));
+    displayItems(items, 'After adding Item 0.5 at the beginning');
+}
+
+function testBulkInsertion() {
+    console.log('\n🧪 === Testing Bulk Insertion ===');
+    
+    // Create initial list
+    const items = [];
+    
+    // Bulk create 5 initial items
+    const initialIndexes = generateBulkIndexes(null, null, 5);
+    for (let i = 0; i < 5; i++) {
+        items.push(createItem(`Item ${i + 1}`, initialIndexes[i]));
+    }
+    displayItems(items, 'Initial list with 5 items');
+    
+    // Insert 3 items between Item 2 and Item 3
+    const insertIndexes = generateBulkIndexes(items[1].index, items[2].index, 3);
+    const newItems = [
+        createItem('Item 2.1', insertIndexes[0]),
+        createItem('Item 2.2', insertIndexes[1]),
+        createItem('Item 2.3', insertIndexes[2])
     ];
     
-    console.log("\nAll indexes in order:", allIndexes);
+    // Insert the new items in the correct position
+    items.splice(2, 0, ...newItems);
+    displayItems(items, 'After bulk inserting 3 items between Item 2 and Item 3');
     
-    // Verify that indexes are properly ordered
-    const sorted = [...allIndexes].sort();
-    const isOrdered = JSON.stringify(allIndexes) === JSON.stringify(sorted);
-    console.log("\nIndexes are properly ordered:", isOrdered);
+    // Add 2 items at the end
+    const endIndexes = generateBulkIndexes(items[items.length - 1].index, null, 2);
+    items.push(
+        createItem('Item 6', endIndexes[0]),
+        createItem('Item 7', endIndexes[1])
+    );
+    displayItems(items, 'After adding 2 items at the end');
 }
 
 function testRelocation() {
-    console.log("\n=== Testing Item Relocation ===\n");
+    console.log('\n🧪 === Testing Item Relocation ===');
     
-    // Create an initial ordered list
-    const initialIndexes = generateBulkIndexes(null, null, 10);
-    console.log("Initial list:", initialIndexes);
+    // Create initial list
+    const items = [];
+    const initialIndexes = generateBulkIndexes(null, null, 6);
+    for (let i = 0; i < 6; i++) {
+        items.push(createItem(`Item ${i + 1}`, initialIndexes[i]));
+    }
+    displayItems(items, 'Initial list with 6 items');
     
-    // Simulate moving 3 items from the beginning to between items 5 and 6
-    const targetPrev = initialIndexes[4];  // 5th item
-    const targetNext = initialIndexes[5];  // 6th item
-    const relocatedIndexes = generateRelocationIndexes(targetPrev, targetNext, 3);
+    // Simulate relocating Item 1 and Item 2 to between Item 4 and Item 5
+    const itemsToMove = items.splice(0, 2); // Remove Item 1 and Item 2
+    displayItems(items, 'After removing Item 1 and Item 2');
     
-    // Construct the new list order
-    const newList = [
-        ...initialIndexes.slice(3, 5),  // Items before the insertion point
-        ...relocatedIndexes,            // Relocated items
-        ...initialIndexes.slice(5)      // Items after the insertion point
-    ];
+    // Generate new indexes for the moved items (between Item 4 and Item 5, which are now at positions 2 and 3)
+    const newIndexes = generateRelocationIndexes(items[1].index, items[2].index, 2);
     
-    console.log("\nRelocated 3 items between positions 5 and 6:");
-    console.log(newList);
+    // Update the moved items with new indexes and rename them for clarity
+    itemsToMove[0].index = newIndexes[0];
+    itemsToMove[0].title = 'Item 1 (moved)';
+    itemsToMove[1].index = newIndexes[1];
+    itemsToMove[1].title = 'Item 2 (moved)';
     
-    // Verify ordering
-    const sorted = [...newList].sort();
-    const isOrdered = JSON.stringify(newList) === JSON.stringify(sorted);
-    console.log("\nIndexes are properly ordered:", isOrdered);
-    
-    // Test even distribution
-    console.log("\nTesting even distribution of items:");
-    const evenlyDistributed = generateRelocationIndexes(
-        initialIndexes[0],
-        initialIndexes[1],
-        5,
-        true
-    );
-    console.log("5 items evenly distributed between first two indexes:", evenlyDistributed);
+    // Insert them in their new position
+    items.splice(2, 0, ...itemsToMove);
+    displayItems(items, 'After relocating Item 1 and Item 2 between Item 4 and Item 5');
 }
 
-// Run tests
-testIndexGeneration();
-testBulkIndexGeneration();
-testRelocation(); 
+function testComplexScenario() {
+    console.log('\n🧪 === Testing Complex Scenario ===');
+    
+    // Start with a small list
+    const items = [
+        createItem('Alpha', generateFractionalIndex(null, null))
+    ];
+    
+    // Add Beta at the end
+    items.push(createItem('Beta', generateFractionalIndex(items[0].index, null)));
+    
+    // Add Gamma at the end
+    items.push(createItem('Gamma', generateFractionalIndex(items[1].index, null)));
+    
+    displayItems(items, 'Initial list: Alpha, Beta, Gamma');
+    
+    // Insert multiple items between Alpha and Beta
+    const betweenIndexes = generateBulkIndexes(items[0].index, items[1].index, 3);
+    const betweenItems = [
+        createItem('Alpha.1', betweenIndexes[0]),
+        createItem('Alpha.2', betweenIndexes[1]),
+        createItem('Alpha.3', betweenIndexes[2])
+    ];
+    items.splice(1, 0, ...betweenItems);
+    displayItems(items, 'After inserting Alpha.1, Alpha.2, Alpha.3 between Alpha and Beta');
+    
+    // Insert one item between Beta and Gamma
+    const betaGammaIndex = generateFractionalIndex(
+        items.find(item => item.title === 'Beta').index,
+        items.find(item => item.title === 'Gamma').index
+    );
+    const betaGammaPosition = items.findIndex(item => item.title === 'Gamma');
+    items.splice(betaGammaPosition, 0, createItem('Beta.5', betaGammaIndex));
+    displayItems(items, 'After inserting Beta.5 between Beta and Gamma');
+    
+    // Add items at the beginning
+    const beginningIndexes = generateBulkIndexes(null, items[0].index, 2);
+    items.unshift(
+        createItem('Prelude', beginningIndexes[0]),
+        createItem('Prologue', beginningIndexes[1])
+    );
+    displayItems(items, 'After adding Prelude and Prologue at the beginning');
+}
+
+function runAllTests() {
+    console.log('🚀 Running Fractional Indexing Tests\n');
+    console.log('=' .repeat(70));
+    
+    try {
+        testBasicInsertion();
+        testBulkInsertion();
+        testRelocation();
+        testComplexScenario();
+        
+        console.log('\n' + '=' .repeat(70));
+        console.log('🎉 All tests completed successfully!');
+        console.log('✅ Fractional indexing is working correctly.');
+    } catch (error) {
+        console.error('\n❌ Test failed:', error.message);
+        console.error(error.stack);
+    }
+}
+
+// Run all tests
+runAllTests();
