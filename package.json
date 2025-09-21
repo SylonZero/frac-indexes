@@ -17,7 +17,8 @@
   "author": "Sai Prakash (sylonzero@gmail.com)",
   "license": "MIT",
   "files": [
-    "src"
+    "src",
+    "LICENSE"
   ],
   "repository": {
     "type": "git",

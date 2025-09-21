@@ -29,6 +29,7 @@ npm install frac-indexes
 
 ## 🚀 Quick Start
 
+### Node.js (Modern ES6+)
 ```javascript
 const { generateFractionalIndex, generateBulkIndexes } = require('frac-indexes');
 
@@ -43,6 +44,23 @@ const middleIndex = generateFractionalIndex(firstIndex, lastIndex);
 
 // Bulk insert 5 items
 const bulkIndexes = generateBulkIndexes(firstIndex, lastIndex, 5);
+```
+
+### Browser (ES5 Compatible)
+```html
+<script src="node_modules/frac-indexes/src/es5-indexing.js"></script>
+<script>
+// Functions available under FractionalIndexing namespace
+var firstIndex = FractionalIndexing.generateFractionalIndex(null, null);
+var lastIndex = FractionalIndexing.generateFractionalIndex(firstIndex, null);
+var middleIndex = FractionalIndexing.generateFractionalIndex(firstIndex, lastIndex);
+</script>
+```
+
+### Node.js (ES5 Compatible)
+```javascript
+var fracIndexes = require('frac-indexes/src/es5-indexing');
+var firstIndex = fracIndexes.generateFractionalIndex(null, null);
 ```
 
 ## 📚 API Reference

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fractional Indexing - Browser Example</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #007cba;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #005a87;
+        }
+        .output {
+            background: #f8f8f8;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .item {
+            padding: 10px;
+            margin: 5px 0;
+            background: #e3f2fd;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔢 Fractional Indexing - Browser Demo</h1>
+        <p>This example shows how to use the ES5-compatible fractional indexing library in a browser.</p>
+        
+        <div>
+            <button onclick="addFirst()">Add First Item</button>
+            <button onclick="addLast()">Add Last Item</button>
+            <button onclick="addMiddle()">Insert in Middle</button>
+            <button onclick="addBulk()">Add 3 Items (Bulk)</button>
+            <button onclick="clearList()">Clear List</button>
+        </div>
+        
+        <h3>📋 Items List:</h3>
+        <div id="itemsList"></div>
+        
+        <h3>🔍 Debug Output:</h3>
+        <div id="output" class="output">Click buttons above to see fractional indexing in action...</div>
+    </div>
+
+    <!-- Load the ES5 fractional indexing library -->
+    <script src="../src/es5-indexing.js"></script>
+    
+    <script>
+        // Our items list
+        var items = [];
+        var itemCounter = 1;
+        
+        function log(message) {
+            var output = document.getElementById('output');
+            output.textContent += new Date().toLocaleTimeString() + ': ' + message + '\n';
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        function updateDisplay() {
+            var itemsList = document.getElementById('itemsList');
+            itemsList.innerHTML = '';
+            
+            // Sort items by their index
+            var sortedItems = items.slice().sort(function(a, b) {
+                return Number(a.index) - Number(b.index);
+            });
+            
+            sortedItems.forEach(function(item) {
+                var itemDiv = document.createElement('div');
+                itemDiv.className = 'item';
+                itemDiv.innerHTML = '<span>' + item.title + '</span><span>Index: ' + item.index + '</span>';
+                itemsList.appendChild(itemDiv);
+            });
+        }
+        
+        function addFirst() {
+            var prevIndex = items.length > 0 ? Math.min.apply(Math, items.map(function(item) { return Number(item.index); })) : null;
+            var minItem = items.find(function(item) { return Number(item.index) === prevIndex; });
+            
+            var newIndex = FractionalIndexing.generateFractionalIndex(null, minItem ? minItem.index : null);
+            var newItem = {
+                title: 'Item ' + itemCounter++,
+                index: newIndex
+            };
+            
+            items.push(newItem);
+            log('Added first item: ' + newItem.title + ' with index ' + newIndex);
+            updateDisplay();
+        }
+        
+        function addLast() {
+            var maxIndex = items.length > 0 ? Math.max.apply(Math, items.map(function(item) { return Number(item.index); })) : null;
+            var maxItem = items.find(function(item) { return Number(item.index) === maxIndex; });
+            
+            var newIndex = FractionalIndexing.generateFractionalIndex(maxItem ? maxItem.index : null, null);
+            var newItem = {
+                title: 'Item ' + itemCounter++,
+                index: newIndex
+            };
+            
+            items.push(newItem);
+            log('Added last item: ' + newItem.title + ' with index ' + newIndex);
+            updateDisplay();
+        }
+        
+        function addMiddle() {
+            if (items.length < 2) {
+                log('Need at least 2 items to insert in middle');
+                return;
+            }
+            
+            // Sort items and pick middle position
+            var sortedItems = items.slice().sort(function(a, b) {
+                return Number(a.index) - Number(b.index);
+            });
+            
+            var midIndex = Math.floor(sortedItems.length / 2);
+            var prevItem = sortedItems[midIndex - 1];
+            var nextItem = sortedItems[midIndex];
+            
+            var newIndex = FractionalIndexing.generateFractionalIndex(prevItem.index, nextItem.index);
+            var newItem = {
+                title: 'Item ' + itemCounter++ + ' (inserted)',
+                index: newIndex
+            };
+            
+            items.push(newItem);
+            log('Inserted item between "' + prevItem.title + '" and "' + nextItem.title + '" with index ' + newIndex);
+            updateDisplay();
+        }
+        
+        function addBulk() {
+            var lastIndex = null;
+            if (items.length > 0) {
+                var maxIndex = Math.max.apply(Math, items.map(function(item) { return Number(item.index); }));
+                var maxItem = items.find(function(item) { return Number(item.index) === maxIndex; });
+                lastIndex = maxItem.index;
+            }
+            
+            var bulkIndexes = FractionalIndexing.generateBulkIndexes(lastIndex, null, 3);
+            
+            for (var i = 0; i < bulkIndexes.length; i++) {
+                var newItem = {
+                    title: 'Bulk Item ' + (i + 1),
+                    index: bulkIndexes[i]
+                };
+                items.push(newItem);
+            }
+            
+            log('Added 3 bulk items with indexes: ' + bulkIndexes.join(', '));
+            updateDisplay();
+        }
+        
+        function clearList() {
+            items = [];
+            itemCounter = 1;
+            log('Cleared all items');
+            updateDisplay();
+        }
+        
+        // Initialize
+        log('Fractional Indexing Browser Demo Ready!');
+        log('Library loaded: ' + (typeof FractionalIndexing !== 'undefined' ? 'SUCCESS' : 'FAILED'));
+    </script>
+</body>
+</html>
