@@ -1,21 +1,11 @@
 # frac-indexes
 
-A robust JavaScript library for generating lexicographically ordered fractional indexes. Perfect for maintaining order in lists when you need to insert items between existing ones without reindexing the entire list.
-
-## 🎯 Why This Library?
-
-This library is designed with **production reliability** in mind. Unlike simpler implementations that can break under edge cases, `frac-indexes` has been thoroughly tested against real-world scenarios including:
-
-- **Boundary Violations**: Prevents indexes from falling outside valid ranges
-- **Repeated Subdivisions**: Handles thousands of insertions between the same items  
-- **Floating-Point Precision**: Gracefully manages extremely small gaps
-- **High-Frequency Operations**: Reliable under concurrent user operations
-- **Legacy Data**: Works with tightly-packed existing indexes
+A robust JavaScript library for generating lexicographically ordered fractional indexes. Perfect for maintaining order in lists when you need to insert items between existing ones without reindexing the entire list, or while supporting CRDT-style operations.
 
 ## ✨ Features
 
-- **Production-Ready**: Extensively tested against edge cases that break other libraries
-- **Boundary-Safe**: Mathematically guaranteed to stay within valid ranges
+- **Production-Ready**: Tested against edge cases involving small gaps, bulk insertions and move operations
+- **Boundary-Safe**: Stays within valid ranges and produces a moderate-sized index value with jitter
 - **Bulk Operations**: Efficient insertion and relocation of multiple items
 - **Real-Time Friendly**: Handles high-frequency collaborative editing
 - **Zero Dependencies**: Lightweight with no external dependencies
@@ -35,15 +25,21 @@ const { generateFractionalIndex, generateBulkIndexes } = require('frac-indexes')
 
 // Create first item
 const firstIndex = generateFractionalIndex(null, null);
+// Returns (eg): 0.000548996
 
 // Add item at the end  
 const lastIndex = generateFractionalIndex(firstIndex, null);
+// Returns (eg): 0.0016129989 
 
 // Insert between two items
 const middleIndex = generateFractionalIndex(firstIndex, lastIndex);
+// Returns (based on first 2 examples): 0.001092958115464
 
 // Bulk insert 5 items
 const bulkIndexes = generateBulkIndexes(firstIndex, lastIndex, 5);
+
+// Returns: [0.001114926762483, 0.001335277582793, 0.001494220983368, 0.001557755522828, 0.001587200051102]
+
 ```
 
 ### Browser (ES5 Compatible)
@@ -78,7 +74,7 @@ Generates a single fractional index between two existing indexes.
 **Example:**
 ```javascript
 const index = generateFractionalIndex('0.001', '0.002');
-// Returns: '0.001500000000000000000'
+// Returns (eg): 0.001392203389972
 ```
 
 ### generateBulkIndexes(prevIndex, nextIndex, count)
@@ -95,7 +91,7 @@ Generates multiple fractional indexes between two existing indexes.
 **Example:**
 ```javascript
 const indexes = generateBulkIndexes('0.001', '0.002', 3);
-// Returns: ['0.001250000000000000000', '0.001500000000000000000', '0.001750000000000000000']
+// Returns (eg): [ '0.001605493264275', '0.001827080243356', '0.001895877231710' ]
 ```
 
 ### generateRelocationIndexes(targetPrevIndex, targetNextIndex, count, distributeEvenly)
@@ -193,13 +189,12 @@ The library generates high-precision decimal numbers as strings, ensuring:
 - Falls back to safe midpoints when gaps become microscopic
 - Maintains deterministic behavior under extreme conditions
 
-## 🛡️ Production Safety
+## 🛡️ Production Safety Tests
 
-This library has been battle-tested against scenarios that break simpler implementations:
+This library has been tested against the following scenarios:
 
-- ✅ **QA Team Scenario**: Fixed 29% boundary violation rate from original algorithm
+- ✅ **Small boundary Scenario**: Ensure small gaps don't result in out of order indexes
 - ✅ **Death by 1000 Cuts**: Survives 15+ sequential subdivisions  
-- ✅ **Tightly Packed Data**: 100% success rate with legacy data
 - ✅ **Microscopic Gaps**: Handles gaps down to floating-point precision limits
 - ✅ **High Frequency**: 100% reliability under 50+ concurrent operations
 
