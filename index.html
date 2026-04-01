@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>frac-indexes — Fractional Indexing for JavaScript</title>
+  <meta name="description" content="A robust JavaScript library for generating lexicographically ordered fractional indexes. Perfect for ordered lists, collaborative editing, and drag-and-drop reordering." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #1c2128;
+      --border: #30363d;
+      --accent: #2ea043;
+      --accent-glow: rgba(46,160,67,0.15);
+      --accent2: #58a6ff;
+      --accent2-glow: rgba(88,166,255,0.12);
+      --text: #e6edf3;
+      --text-muted: #7d8590;
+      --text-dim: #484f58;
+      --purple: #bc8cff;
+      --orange: #ffa657;
+      --red: #ff7b72;
+      --yellow: #e3b341;
+      --radius: 10px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(13,17,23,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 60px;
+    }
+    .nav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text); font-weight: 600; font-size: 1rem; }
+    .nav-brand .logo { width: 28px; height: 28px; background: var(--accent); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+    .nav-links { display: flex; align-items: center; gap: 1.5rem; }
+    .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--text); }
+    .nav-badge { background: var(--accent); color: #fff; font-size: 0.75rem; font-weight: 600; padding: 3px 10px; border-radius: 20px; }
+
+    /* ── HERO ── */
+    .hero {
+      padding: 7rem 2rem 5rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; top: -120px; left: 50%; transform: translateX(-50%);
+      width: 800px; height: 500px;
+      background: radial-gradient(ellipse, rgba(46,160,67,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--accent-glow); border: 1px solid rgba(46,160,67,0.3);
+      color: var(--accent); font-size: 0.8rem; font-weight: 500;
+      padding: 5px 14px; border-radius: 20px; margin-bottom: 1.5rem;
+    }
+    .hero h1 {
+      font-size: clamp(2.4rem, 5vw, 3.8rem);
+      font-weight: 700; line-height: 1.15;
+      letter-spacing: -0.03em;
+      margin-bottom: 1.25rem;
+    }
+    .hero h1 span { color: var(--accent); }
+    .hero p {
+      max-width: 580px; margin: 0 auto 2.5rem;
+      color: var(--text-muted); font-size: 1.1rem; line-height: 1.7;
+    }
+    .hero-actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 11px 22px; border-radius: var(--radius);
+      font-size: 0.95rem; font-weight: 500;
+      text-decoration: none; transition: all 0.2s; cursor: pointer;
+      border: none;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: #3fb950; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(46,160,67,0.3); }
+    .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: var(--surface2); border-color: var(--text-muted); transform: translateY(-1px); }
+
+    .install-box {
+      display: inline-flex; align-items: center; gap: 12px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 12px 20px;
+      margin-top: 2.5rem; font-family: 'JetBrains Mono', monospace;
+      font-size: 0.95rem; color: var(--accent);
+    }
+    .install-box .prompt { color: var(--text-dim); }
+    .copy-btn {
+      background: none; border: none; color: var(--text-muted);
+      cursor: pointer; padding: 2px 6px; border-radius: 4px;
+      font-size: 0.8rem; transition: all 0.2s;
+    }
+    .copy-btn:hover { background: var(--surface2); color: var(--text); }
+
+    /* ── STATS ── */
+    .stats {
+      display: flex; justify-content: center; gap: 3rem;
+      flex-wrap: wrap; padding: 3rem 2rem;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .stat { text-align: center; }
+    .stat-value { font-size: 1.8rem; font-weight: 700; color: var(--text); }
+    .stat-label { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    /* ── SECTIONS ── */
+    .section { padding: 5rem 2rem; max-width: 1100px; margin: 0 auto; }
+    .section-label { font-size: 0.8rem; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.75rem; }
+    .section h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 700; margin-bottom: 1rem; letter-spacing: -0.02em; }
+    .section > p { color: var(--text-muted); font-size: 1.05rem; max-width: 620px; margin-bottom: 3rem; }
+
+    /* ── FEATURES GRID ── */
+    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; }
+    .feature-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.5rem;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .feature-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .feature-icon { font-size: 1.5rem; margin-bottom: 0.75rem; }
+    .feature-card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .feature-card p { font-size: 0.9rem; color: var(--text-muted); line-height: 1.6; }
+
+    /* ── CODE BLOCKS ── */
+    .code-section { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    @media (max-width: 768px) { .code-section { grid-template-columns: 1fr; } .nav-links { display: none; } }
+
+    .code-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    .code-card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px; border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+    }
+    .code-card-title { font-size: 0.85rem; font-weight: 500; color: var(--text-muted); display: flex; align-items: center; gap: 8px; }
+    .lang-badge { background: var(--accent-glow); color: var(--accent); font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; }
+    pre {
+      padding: 1.25rem 1.5rem; overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem; line-height: 1.7;
+    }
+    .kw { color: var(--red); }
+    .fn { color: var(--accent2); }
+    .str { color: var(--yellow); }
+    .cm { color: var(--text-dim); font-style: italic; }
+    .num { color: var(--purple); }
+    .const { color: var(--orange); }
+
+    /* ── API TABLE ── */
+    .api-cards { display: flex; flex-direction: column; gap: 1.5rem; }
+    .api-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    .api-card-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); background: var(--surface2); }
+    .api-fn-name { font-family: 'JetBrains Mono', monospace; font-size: 1rem; color: var(--accent2); font-weight: 500; }
+    .api-fn-sig { font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; color: var(--text-muted); margin-top: 4px; }
+    .api-card-body { padding: 1.25rem 1.5rem; }
+    .api-card-body p { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1rem; }
+    .params-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .params-table th { text-align: left; padding: 6px 12px; color: var(--text-muted); font-weight: 500; border-bottom: 1px solid var(--border); }
+    .params-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .params-table tr:last-child td { border-bottom: none; }
+    .params-table .param-name { font-family: 'JetBrains Mono', monospace; color: var(--orange); }
+    .params-table .param-type { font-family: 'JetBrains Mono', monospace; color: var(--purple); }
+    .params-table .param-desc { color: var(--text-muted); }
+    .returns-row { display: flex; align-items: flex-start; gap: 8px; margin-top: 0.75rem; font-size: 0.85rem; }
+    .returns-label { color: var(--text-dim); font-weight: 500; white-space: nowrap; }
+    .returns-val { font-family: 'JetBrains Mono', monospace; color: var(--purple); }
+
+    /* ── USE CASES ── */
+    .use-cases-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.25rem; }
+    .use-case {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    .use-case-header { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+    .use-case-header h3 { font-size: 0.95rem; font-weight: 600; }
+    .use-case pre { font-size: 0.78rem; }
+
+    /* ── SAFETY ── */
+    .safety-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+    .safety-item {
+      display: flex; align-items: flex-start; gap: 12px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.1rem;
+    }
+    .safety-check { color: var(--accent); font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+    .safety-item h4 { font-size: 0.9rem; font-weight: 600; margin-bottom: 3px; }
+    .safety-item p { font-size: 0.82rem; color: var(--text-muted); }
+
+    /* ── HOW IT WORKS ── */
+    .how-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; counter-reset: steps; }
+    .how-step {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.25rem;
+      position: relative;
+      counter-increment: steps;
+    }
+    .how-step::before {
+      content: counter(steps);
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--accent-glow); border: 1px solid rgba(46,160,67,0.3);
+      color: var(--accent); font-size: 0.8rem; font-weight: 700;
+      margin-bottom: 0.75rem;
+    }
+    .how-step h4 { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.4rem; }
+    .how-step p { font-size: 0.85rem; color: var(--text-muted); }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2.5rem 2rem;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+    footer a { color: var(--accent2); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+    .footer-links { display: flex; gap: 1.5rem; justify-content: center; margin-bottom: 1rem; flex-wrap: wrap; }
+
+    /* ── DIVIDERS ── */
+    .divider { border: none; border-top: 1px solid var(--border); }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="#" class="nav-brand">
+    <div class="logo">fi</div>
+    frac-indexes
+  </a>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#quickstart">Quick Start</a>
+    <a href="#api">API</a>
+    <a href="#use-cases">Use Cases</a>
+    <a href="https://github.com/SylonZero/frac-indexes" target="_blank">GitHub</a>
+    <span class="nav-badge">v1.2.0</span>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">⚡ Zero Dependencies &nbsp;·&nbsp; MIT License</div>
+  <h1>Fractional Indexing<br>for <span>JavaScript</span></h1>
+  <p>Generate lexicographically ordered indexes for inserting items between existing ones — without reindexing your entire list. Built for collaborative apps, drag-and-drop, and real-time sync.</p>
+  <div class="hero-actions">
+    <a href="#quickstart" class="btn btn-primary">Get Started →</a>
+    <a href="https://github.com/SylonZero/frac-indexes" target="_blank" class="btn btn-secondary">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      View on GitHub
+    </a>
+  </div>
+  <div class="install-box">
+    <span class="prompt">$</span>
+    <span id="install-cmd">npm install frac-indexes</span>
+    <button class="copy-btn" onclick="copyInstall()">copy</button>
+  </div>
+</section>
+
+<!-- STATS -->
+<div class="stats">
+  <div class="stat"><div class="stat-value">3</div><div class="stat-label">Core Functions</div></div>
+  <div class="stat"><div class="stat-value">0</div><div class="stat-label">Dependencies</div></div>
+  <div class="stat"><div class="stat-value">15+</div><div class="stat-label">Decimal Precision</div></div>
+  <div class="stat"><div class="stat-value">100%</div><div class="stat-label">Test Coverage</div></div>
+</div>
+
+<!-- FEATURES -->
+<section class="section" id="features">
+  <div class="section-label">Why frac-indexes</div>
+  <h2>Everything you need for ordered lists</h2>
+  <p>A focused, battle-tested library that handles the hard parts of fractional indexing so you don't have to.</p>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">🏭</div>
+      <h3>Production-Ready</h3>
+      <p>Tested against edge cases including small gaps, bulk insertions, and move operations under high-frequency concurrent load.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🛡️</div>
+      <h3>Boundary-Safe</h3>
+      <p>Multiple validation layers prevent range violations. Stays within valid bounds and produces moderate-sized index values with bounded jitter.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <h3>Bulk Operations</h3>
+      <p>Efficient insertion and relocation of multiple items in a single call with <code>generateBulkIndexes</code> and <code>generateRelocationIndexes</code>.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔄</div>
+      <h3>Real-Time Friendly</h3>
+      <p>Handles high-frequency collaborative editing reliably. 100% reliability under 50+ concurrent operations.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📦</div>
+      <h3>Zero Dependencies</h3>
+      <p>Lightweight with no external dependencies. Works with Node.js (ES6+) and browsers (ES5 compatible build included).</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">💎</div>
+      <h3>TypeScript Ready</h3>
+      <p>Full type definitions included out of the box. Drop it into any TypeScript project with no extra setup required.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- QUICK START -->
+<section class="section" id="quickstart">
+  <div class="section-label">Quick Start</div>
+  <h2>Up and running in seconds</h2>
+  <p>Import the functions you need and start generating indexes immediately.</p>
+  <div class="code-section">
+    <div class="code-card">
+      <div class="code-card-header">
+        <div class="code-card-title"><span class="lang-badge">Node.js ES6+</span> Basic usage</div>
+      </div>
+      <pre><span class="kw">const</span> { <span class="const">generateFractionalIndex</span>, <span class="const">generateBulkIndexes</span> }
+  = <span class="fn">require</span>(<span class="str">'frac-indexes'</span>);
+
+<span class="cm">// Create first item in an empty list</span>
+<span class="kw">const</span> <span class="const">first</span> = <span class="fn">generateFractionalIndex</span>(<span class="kw">null</span>, <span class="kw">null</span>);
+<span class="cm">// → "0.0005489960"</span>
+
+<span class="cm">// Add item at the end</span>
+<span class="kw">const</span> <span class="const">last</span> = <span class="fn">generateFractionalIndex</span>(<span class="const">first</span>, <span class="kw">null</span>);
+<span class="cm">// → "0.0016129989"</span>
+
+<span class="cm">// Insert between two items</span>
+<span class="kw">const</span> <span class="const">middle</span> = <span class="fn">generateFractionalIndex</span>(<span class="const">first</span>, <span class="const">last</span>);
+<span class="cm">// → "0.001092958115464"</span>
+
+<span class="cm">// Bulk insert 5 items at once</span>
+<span class="kw">const</span> <span class="const">bulk</span> = <span class="fn">generateBulkIndexes</span>(<span class="const">first</span>, <span class="const">last</span>, <span class="num">5</span>);</pre>
+    </div>
+    <div class="code-card">
+      <div class="code-card-header">
+        <div class="code-card-title"><span class="lang-badge">Browser ES5</span> Script tag usage</div>
+      </div>
+      <pre><span class="cm">&lt;!-- Include the ES5 compatible build --&gt;</span>
+<span class="kw">&lt;script</span> <span class="const">src</span>=<span class="str">"node_modules/frac-indexes/src/es5-indexing.js"</span><span class="kw">&gt;&lt;/script&gt;</span>
+
+<span class="kw">&lt;script&gt;</span>
+<span class="cm">// All functions under FractionalIndexing namespace</span>
+<span class="kw">var</span> <span class="const">first</span> = <span class="const">FractionalIndexing</span>
+  .<span class="fn">generateFractionalIndex</span>(<span class="kw">null</span>, <span class="kw">null</span>);
+
+<span class="kw">var</span> <span class="const">last</span> = <span class="const">FractionalIndexing</span>
+  .<span class="fn">generateFractionalIndex</span>(<span class="const">first</span>, <span class="kw">null</span>);
+
+<span class="kw">var</span> <span class="const">middle</span> = <span class="const">FractionalIndexing</span>
+  .<span class="fn">generateFractionalIndex</span>(<span class="const">first</span>, <span class="const">last</span>);
+<span class="kw">&lt;/script&gt;</span>
+
+<span class="cm">// Or with Node.js ES5:</span>
+<span class="kw">var</span> <span class="const">fi</span> = <span class="fn">require</span>(<span class="str">'frac-indexes/src/es5-indexing'</span>);
+<span class="kw">var</span> <span class="const">idx</span> = <span class="const">fi</span>.<span class="fn">generateFractionalIndex</span>(<span class="kw">null</span>, <span class="kw">null</span>);</pre>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- API REFERENCE -->
+<section class="section" id="api">
+  <div class="section-label">API Reference</div>
+  <h2>Three powerful functions</h2>
+  <p>A focused API with clear, predictable behavior and full TypeScript support.</p>
+  <div class="api-cards">
+
+    <div class="api-card">
+      <div class="api-card-header">
+        <div class="api-fn-name">generateFractionalIndex</div>
+        <div class="api-fn-sig">(prevIndex: string|null, nextIndex: string|null) → string</div>
+      </div>
+      <div class="api-card-body">
+        <p>Generates a single fractional index that sorts between two existing indexes. Pass <code>null</code> for either boundary to indicate the start or end of the list.</p>
+        <table class="params-table">
+          <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td class="param-name">prevIndex</td><td class="param-type">string | null</td><td class="param-desc">The index of the item before the desired position. Pass <code>null</code> to insert at the beginning.</td></tr>
+            <tr><td class="param-name">nextIndex</td><td class="param-type">string | null</td><td class="param-desc">The index of the item after the desired position. Pass <code>null</code> to insert at the end.</td></tr>
+          </tbody>
+        </table>
+        <div class="returns-row"><span class="returns-label">Returns</span><span class="returns-val">string</span>&nbsp;— a new fractional index that sorts between the two inputs</div>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-card-header">
+        <div class="api-fn-name">generateBulkIndexes</div>
+        <div class="api-fn-sig">(prevIndex: string|null, nextIndex: string|null, count: number) → string[]</div>
+      </div>
+      <div class="api-card-body">
+        <p>Generates multiple fractional indexes between two existing indexes in a single efficient call. Items are sequentially spaced within the gap.</p>
+        <table class="params-table">
+          <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td class="param-name">prevIndex</td><td class="param-type">string | null</td><td class="param-desc">The lower boundary index (or null for start of list).</td></tr>
+            <tr><td class="param-name">nextIndex</td><td class="param-type">string | null</td><td class="param-desc">The upper boundary index (or null for end of list).</td></tr>
+            <tr><td class="param-name">count</td><td class="param-type">number</td><td class="param-desc">Number of indexes to generate. Returns an empty array if count ≤ 0.</td></tr>
+          </tbody>
+        </table>
+        <div class="returns-row"><span class="returns-label">Returns</span><span class="returns-val">string[]</span>&nbsp;— array of new indexes in ascending order</div>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-card-header">
+        <div class="api-fn-name">generateRelocationIndexes</div>
+        <div class="api-fn-sig">(targetPrev: string|null, targetNext: string|null, count: number, distributeEvenly?: boolean) → string[]</div>
+      </div>
+      <div class="api-card-body">
+        <p>Generates indexes for moving multiple items to a new position. Supports both evenly-distributed and sequential placement strategies.</p>
+        <table class="params-table">
+          <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td class="param-name">targetPrevIndex</td><td class="param-type">string | null</td><td class="param-desc">Index before the destination position.</td></tr>
+            <tr><td class="param-name">targetNextIndex</td><td class="param-type">string | null</td><td class="param-desc">Index after the destination position.</td></tr>
+            <tr><td class="param-name">count</td><td class="param-type">number</td><td class="param-desc">Number of items being relocated.</td></tr>
+            <tr><td class="param-name">distributeEvenly</td><td class="param-type">boolean</td><td class="param-desc">If true (default), items are spread evenly across the target gap. If false, uses sequential bulk insertion.</td></tr>
+          </tbody>
+        </table>
+        <div class="returns-row"><span class="returns-label">Returns</span><span class="returns-val">string[]</span>&nbsp;— array of new indexes for the relocated items</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- USE CASES -->
+<section class="section" id="use-cases">
+  <div class="section-label">Use Cases</div>
+  <h2>Built for real-world scenarios</h2>
+  <p>Common patterns you can drop straight into your application.</p>
+  <div class="use-cases-grid">
+
+    <div class="use-case">
+      <div class="use-case-header">
+        <span>📋</span>
+        <h3>Ordered Task Lists</h3>
+      </div>
+      <pre><span class="kw">const</span> <span class="const">tasks</span> = [
+  { <span class="const">id</span>: <span class="num">1</span>, <span class="const">index</span>: <span class="fn">generateFractionalIndex</span>(<span class="kw">null</span>, <span class="kw">null</span>),
+    <span class="const">title</span>: <span class="str">"First task"</span> },
+  { <span class="const">id</span>: <span class="num">2</span>, <span class="const">index</span>: <span class="fn">generateFractionalIndex</span>(<span class="const">tasks</span>[<span class="num">0</span>].<span class="const">index</span>, <span class="kw">null</span>),
+    <span class="const">title</span>: <span class="str">"Second task"</span> }
+];
+
+<span class="cm">// Insert between existing tasks</span>
+<span class="kw">const</span> <span class="const">newIdx</span> = <span class="fn">generateFractionalIndex</span>(
+  <span class="const">tasks</span>[<span class="num">0</span>].<span class="const">index</span>,
+  <span class="const">tasks</span>[<span class="num">1</span>].<span class="const">index</span>
+);</pre>
+    </div>
+
+    <div class="use-case">
+      <div class="use-case-header">
+        <span>🤝</span>
+        <h3>Collaborative Editing</h3>
+      </div>
+      <pre><span class="kw">function</span> <span class="fn">insertMultipleItems</span>(<span class="const">prev</span>, <span class="const">next</span>, <span class="const">items</span>) {
+  <span class="kw">const</span> <span class="const">indexes</span> = <span class="fn">generateBulkIndexes</span>(
+    <span class="const">prev</span>?.<span class="const">index</span> || <span class="kw">null</span>,
+    <span class="const">next</span>?.<span class="const">index</span> || <span class="kw">null</span>,
+    <span class="const">items</span>.<span class="const">length</span>
+  );
+  <span class="kw">return</span> <span class="const">items</span>.<span class="fn">map</span>((<span class="const">item</span>, <span class="const">i</span>) => ({
+    ...<span class="const">item</span>,
+    <span class="const">index</span>: <span class="const">indexes</span>[<span class="const">i</span>]
+  }));
+}</pre>
+    </div>
+
+    <div class="use-case">
+      <div class="use-case-header">
+        <span>🖱️</span>
+        <h3>Drag & Drop Reordering</h3>
+      </div>
+      <pre><span class="kw">function</span> <span class="fn">moveItems</span>(<span class="const">moving</span>, <span class="const">target</span>) {
+  <span class="kw">const</span> <span class="const">newIndexes</span> = <span class="fn">generateRelocationIndexes</span>(
+    <span class="const">target</span>.<span class="const">previous</span>?.<span class="const">index</span> || <span class="kw">null</span>,
+    <span class="const">target</span>.<span class="const">next</span>?.<span class="const">index</span> || <span class="kw">null</span>,
+    <span class="const">moving</span>.<span class="const">length</span>
+  );
+  <span class="kw">return</span> <span class="const">moving</span>.<span class="fn">map</span>((<span class="const">item</span>, <span class="const">i</span>) => ({
+    ...<span class="const">item</span>, <span class="const">index</span>: <span class="const">newIndexes</span>[<span class="const">i</span>]
+  }));
+}</pre>
+    </div>
+
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- HOW IT WORKS -->
+<section class="section">
+  <div class="section-label">Internals</div>
+  <h2>How it works</h2>
+  <p>Precise math under the hood to keep your indexes always valid and always ordered.</p>
+  <div class="how-grid">
+    <div class="how-step">
+      <h4>Lexicographic Order</h4>
+      <p>All indexes are high-precision decimal strings formatted so string comparison always matches numeric order.</p>
+    </div>
+    <div class="how-step">
+      <h4>Bounded Jitter</h4>
+      <p>Random variation is capped at 25% of the available gap on each side of the midpoint — so boundaries are never crossed.</p>
+    </div>
+    <div class="how-step">
+      <h4>Precision Scaling</h4>
+      <p>Uses 15+ decimal places to gracefully handle microscopic gaps down to floating-point precision limits.</p>
+    </div>
+    <div class="how-step">
+      <h4>Boundary Guards</h4>
+      <p>Multiple validation layers with IEEE 754 safety margins catch edge cases and fall back to safe midpoints automatically.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- SAFETY -->
+<section class="section">
+  <div class="section-label">Battle-Tested</div>
+  <h2>Production safety tests</h2>
+  <p>Verified against the scenarios that break most fractional indexing implementations.</p>
+  <div class="safety-grid">
+    <div class="safety-item">
+      <div class="safety-check">✅</div>
+      <div>
+        <h4>Small Boundary Scenario</h4>
+        <p>Ensures small gaps never produce out-of-order indexes.</p>
+      </div>
+    </div>
+    <div class="safety-item">
+      <div class="safety-check">✅</div>
+      <div>
+        <h4>Death by 1000 Cuts</h4>
+        <p>Survives 15+ sequential subdivisions of the same gap.</p>
+      </div>
+    </div>
+    <div class="safety-item">
+      <div class="safety-check">✅</div>
+      <div>
+        <h4>Microscopic Gaps</h4>
+        <p>Handles gaps down to the floating-point precision limit.</p>
+      </div>
+    </div>
+    <div class="safety-item">
+      <div class="safety-check">✅</div>
+      <div>
+        <h4>High Frequency</h4>
+        <p>100% reliability under 50+ concurrent operations.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-links">
+    <a href="https://github.com/SylonZero/frac-indexes" target="_blank">GitHub</a>
+    <a href="https://www.npmjs.com/package/frac-indexes" target="_blank">npm</a>
+    <a href="https://github.com/SylonZero/frac-indexes/issues" target="_blank">Issues</a>
+    <a href="https://github.com/SylonZero/frac-indexes/blob/main/LICENSE" target="_blank">MIT License</a>
+  </div>
+  <p>Made with ♥ by <a href="https://github.com/SylonZero" target="_blank">Sai Prakash</a> &nbsp;·&nbsp; <strong>frac-indexes</strong> v1.2.0</p>
+</footer>
+
+<script>
+  function copyInstall() {
+    navigator.clipboard.writeText('npm install frac-indexes').then(() => {
+      const btn = document.querySelector('.copy-btn');
+      btn.textContent = 'copied!';
+      btn.style.color = 'var(--accent)';
+      setTimeout(() => { btn.textContent = 'copy'; btn.style.color = ''; }, 2000);
+    });
+  }
+</script>
+
+</body>
+</html>
