@@ -71,6 +71,8 @@ Generates a single fractional index between two existing indexes.
 
 **Returns:** (string) A new fractional index that will sort between the inputs
 
+**Throws:** `Error` if both `prevIndex` and `nextIndex` are provided and `prevIndex >= nextIndex`
+
 **Example:**
 ```javascript
 const index = generateFractionalIndex('0.001', '0.002');
@@ -105,6 +107,8 @@ Generates indexes for relocating multiple items to a new position.
 - `distributeEvenly` (boolean, optional): Whether to distribute items evenly (default: true)
 
 **Returns:** (string[]) An array of new indexes for the relocated items
+
+**Throws:** `Error` if both `targetPrevIndex` and `targetNextIndex` are provided and `targetPrevIndex >= targetNextIndex`
 
 **Example:**
 ```javascript
