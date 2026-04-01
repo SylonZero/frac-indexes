@@ -18,8 +18,8 @@ function displayItems(items, description) {
     console.log('└─────────────────────────────────────────────────────────────┘');
     
     // Verify ordering
-    const isCorrectOrder = items.every((item, i) => 
-        i === 0 || item.index > items[i - 1].index
+    const isCorrectOrder = items.every((item, i) =>
+        i === 0 || Number(item.index) > Number(items[i - 1].index)
     );
     
     console.log(`✅ Ordering is ${isCorrectOrder ? 'CORRECT' : 'INCORRECT'}`);

@@ -100,20 +100,23 @@ function generateRelocationIndexes(targetPrevIndex, targetNextIndex, count, dist
     if (count === 1) return [generateFractionalIndex(targetPrevIndex, targetNextIndex)];
 
     if (distributeEvenly) {
-        // Calculate evenly spaced positions
+        // Calculate evenly spaced positions using full numeric precision
         const indexes = new Array(count);
-        const start = targetPrevIndex ? Number(targetPrevIndex.slice(0, 7)) : 0;
-        const end = targetNextIndex ? Number(targetNextIndex.slice(0, 7)) : start + count * 0.001;
-        
+        const start = targetPrevIndex ? Number(targetPrevIndex) : 0;
+        const end = targetNextIndex ? Number(targetNextIndex) : start + count * 0.001;
+
+        if (end <= start) {
+            throw new Error(`Invalid range: targetPrevIndex (${targetPrevIndex}) must be less than targetNextIndex (${targetNextIndex})`);
+        }
+
         // Calculate step size for even distribution
         const step = (end - start) / (count + 1);
-        
+
         for (let i = 0; i < count; i++) {
-            const position = (start + step * (i + 1)).toFixed(5);
-            const jitter = Math.floor(10000 + Math.random() * 90000).toString();
-            indexes[i] = position + jitter;
+            const position = start + step * (i + 1);
+            indexes[i] = position.toFixed(15);
         }
-        
+
         return indexes;
     } else {
         // Use bulk insertion if even distribution is not required
